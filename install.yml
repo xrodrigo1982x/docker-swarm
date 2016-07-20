@@ -1,0 +1,25 @@
+- hosts: all
+  tasks:
+    - name: Install
+      shell: curl -fsSL https://test.docker.com/ | sh
+
+    - name: restart services
+      service: name={{item}} state=started enabled=true
+      with_items:
+       - docker
+
+    - name: create docker group
+      group: name=docker state=present
+
+    - name: add user
+      user: name=vagrant group=docker
+
+- hosts: swarm-master
+  tasks:
+    - name: start swarm
+      shell: docker swarm init --secret fsfndishmfdojsgçlfkdjsglfkd
+
+- hosts: swarm-node
+  tasks:
+    - name: join swarm
+      shell: docker swarm join --secret fsfndishmfdojsgçlfkdjsglfkd 192.0.3.11:2377
