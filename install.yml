@@ -1,7 +1,18 @@
 - hosts: all
-  tasks:
+  tasks: 
+    - name: check for docker
+      shell: "service docker status"
+      register: docker_verify
+      ignore_errors: yes    
+
     - name: Install
       shell: curl -fsSL https://test.docker.com/ | sh
+      when: docker_verify.rc != 0
+      
+    - name: install utils
+      yum: name={{item}} state=latest
+      with_items:
+       - nano 
 
     - name: restart services
       service: name={{item}} state=started enabled=true
@@ -17,9 +28,14 @@
 - hosts: swarm-master
   tasks:
     - name: start swarm
-      shell: docker swarm init --secret fsfndishmfdojsgçlfkdjsglfkd
+      shell: docker swarm init --secret {{ swarm_pwd }}
+      ignore_errors: yes
 
 - hosts: swarm-node
   tasks:
+    - name: leave swarm
+      shell: docker swarm leave
+      ignore_errors: yes
+
     - name: join swarm
-      shell: docker swarm join --secret fsfndishmfdojsgçlfkdjsglfkd 192.0.3.11:2377
+      shell: docker swarm join --secret {{ swarm_pwd }} {{ master_node }}
