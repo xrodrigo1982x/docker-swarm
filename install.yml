@@ -5,10 +5,16 @@
       register: docker_verify
       ignore_errors: yes    
 
+    - name: docker repo
+      copy: src=./docker.repo dest=/etc/yum.repos.d/docker.repo
+
     - name: Install
-      shell: curl -fsSL https://test.docker.com/ | sh
+      yum: name=docker-engine-1.12.1-1.el7.centos state=latest
       when: docker_verify.rc != 0
-      
+   
+    - name: docker config
+      copy: src=docker.config dest=/lib/systemd/system/docker.service
+
     - name: install utils
       yum: name={{item}} state=latest
       with_items:
@@ -28,7 +34,7 @@
 - hosts: swarm-master
   tasks:
     - name: start swarm
-      shell: docker swarm init --secret {{ swarm_pwd }}
+      shell: docker swarm init --listen-addr 0.0.0.0:2377 --advertise-addr 192.0.3.11 
       ignore_errors: yes
 
 - hosts: swarm-node
@@ -38,4 +44,4 @@
       ignore_errors: yes
 
     - name: join swarm
-      shell: docker swarm join --secret {{ swarm_pwd }} {{ master_node }}
+      shell: docker swarm join 192.0.3.11:2377
